@@ -1,0 +1,100 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<dom-module id="chick-quantiles-table">
+    <template>
+        <table class="avg-stats">
+            <tbody dom-if="[[quantiles]]">
+                <tr>
+                    <th>High</th>
+                    <td>[[quantile75]]</td>
+                </tr>
+                <tr>
+                    <th>Avg</th>
+                    <td>[[quantile50]]</td>
+                </tr>
+                <tr>
+                    <th>Low</th>
+                    <td>[[quantile25]]</td>
+                </tr>
+            </tbody>
+        </table>
+        <template is="dom-if" if="{{_isGreaterZero(quantileChangeInPercent)}}">
+            <div class="avg-stats-summary">
+                upside %[[quantileChangeInPercent]]
+            </div>
+        </template>
+        <template is="dom-if" if="{{_isLowerZero(quantileChangeInPercent)}}">
+            <div class="avg-stats-summary">
+                downside -%[[quantileChangeInPercent]]
+            </div>
+        </template>
+        <style>
+            .avg-stats {
+                width: 100%;
+                background-color: rgba(223, 223, 223, 1);
+                border: 1px solid rgba(151, 151, 151, 1);
+            }
+            
+            .avg-stats-summary {
+                color: rgba(74, 74, 74, 1);
+                text-align: center;
+            }
+        </style>
+    </template>
+    <script>
+        class ChickQuantilesTable extends Polymer.Element {
+            static get is() { return 'chick-quantiles-table'; }
+
+            static get properties() {
+                return {
+                    quantiles: {
+                        type: Array,
+                        reflectToAttribute: true,
+                        observer: '_quantiles'
+                    },
+                    quantile25: Number,
+                    quantile50: Number,
+                    quantile75: Number,
+                    quantileChangeInPercent: Number,
+                    drewLineChart: String,
+                    maxNumberOfWeeks: {
+                        type: Number,
+                        value: 0
+
+                    }
+                };
+            }
+
+            _isGreaterZero(quantileChangeInPercent) {
+                return quantileChangeInPercent > 0;
+            }
+
+            _isLowerZero(quantileChangeInPercent) {
+                return quantileChangeInPercent < 0;
+            }
+
+            _quantiles(quantiles) {
+                this.quantiles = quantiles;
+                this.quantile25 = quantiles[25];
+                this.quantile50 = quantiles[50];
+                this.quantile75 = quantiles[75];
+            }
+
+            drawLineChart(lineChartPoints, multiplierX, multiplierY) {
+
+                let firstLine = true;
+
+                const pointToSvgPathString = (point) => {
+                    if (firstLine) {
+                        firstLine = false;
+                        return `M ${point.x * multiplierX} ${point.y * multiplierY}`;
+                    }
+                    return `L ${point.x * multiplierX} ${point.y * multiplierY}`;
+                };
+                return lineChartPoints.map(pointToSvgPathString).join(' ');
+            }
+        }
+
+        window.customElements.define(ChickQuantilesTable.is, ChickQuantilesTable);
+    </script>
+</dom-module>

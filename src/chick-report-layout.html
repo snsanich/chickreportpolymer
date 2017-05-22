@@ -1,0 +1,370 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer-layout/app-drawer-layout.html">
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+
+<link rel="lazy-import" href="chick-view1.html">
+<link rel="lazy-import" href="chick-view404.html">
+
+<dom-module id="chick-report-layout">
+  <template>
+    <style>
+       :host {
+        --app-primary-color: #4285f4;
+        --app-secondary-color: black;
+        display: block;
+      }
+      
+      app-drawer-layout:not([narrow]) [drawer-toggle] {
+        display: none;
+      }
+    </style>
+
+    <app-location route="{{route}}"></app-location>
+    <app-route route="{{route}}" pattern="[[rootPattern]]:page" data="{{routeData}}" tail="{{subroute}}"></app-route>
+
+    <app-drawer-layout fullbleed>
+      <!-- Main content -->
+      <iron-pages selected="[[page]]" attr-for-selected="name" fallback-selection="view404" role="main">
+        <chick-view1 name="view1" records="[[records]]" max-number-of-weeks="[[maxNumberOfWeeks]]" line-chart-points="[[lineChartPoints]]"
+          line-chart-up="[[lineChartUp]]" line-chart-down="[[lineChartDown]]"
+           quantiles="[[quantiles]]" quantile-change-in-percent="[[quantileChangeInPercent]]"
+           diet-proportions="[[dietProportions]]"></chick-view1>
+        <chick-view404 name="view404"></chick-view404>
+      </iron-pages>
+    </app-drawer-layout>
+  </template>
+
+  <script>
+    class Point {
+      static get properties() {
+        return {
+          x: Number,
+          y: Number
+        };
+      }
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+      }
+    }
+    class Chick {
+
+      static get properties() {
+        return {
+          _maxWeekAgo: Number,
+          _maxIncome: Number,
+          _initWeight: Number
+        };
+      }
+
+      get diet() {
+        return this._diet;
+      }
+
+      get maxIncome() {
+        return this._maxIncome;
+      }
+
+      registerRecord(record) {
+        this._maxWeekAgo = Math.max(record.someWeekAgo, this._maxWeekAgo);
+        if (record.someWeekAgo === 0) {
+          this._initWeight = record.weight;
+        }
+      }
+
+      addMaxIncome(income) {
+        this._maxIncome = Math.max(this._maxIncome, income);
+      }
+
+      calculateIncome(weight) {
+        return weight - this._initWeight;
+      }
+
+      /**
+       * if _maxWeekAgo is now,
+       * than weekAgo is yesterday.
+       * So, formula is: now - (_maxWeekAgo - weekAgo) weeks
+       * @param weekAgo
+       */
+      calculateWeek(weekAgo) {
+        const weeks = this._maxWeekAgo - weekAgo;
+        const millisecondsInWeeks = weeks * 7 * 86400000;
+        const now = Date.now();
+        return new Date(now - millisecondsInWeeks);
+      }
+
+      constructor(
+        _id,
+        _diet
+      ) {
+        this._id = _id;
+        this._diet = _diet;
+        this._maxWeekAgo = -Infinity;
+        this._maxIncome = -Infinity;
+        this._initWeight = NaN;
+      }
+    }
+    class ChickReportLayout extends Polymer.Element {
+
+      static get is() { return 'chick-report-layout'; }
+
+      static get properties() {
+        return {
+          page: {
+            type: String,
+            reflectToAttribute: true,
+            observer: '_pageChanged'
+          },
+          rootPattern: String,
+          routeData: Object,
+          subroute: String,
+          chickId: {
+            type: Number,
+            value: 100
+          },
+          chicks: {
+            type: Object,
+            value: {}
+          },
+          maxNumberOfWeeks: {
+            type: Number
+          },
+          lineChartPoints: Array,
+          lineChartUp: Object,
+          lineChartDown: Object,
+          quantiles: Array,
+          quantileChangeInPercent: Number,
+          dietProportions: Array,
+          records: Array
+        };
+      }
+
+      static get observers() {
+        return [
+          '_routePageChanged(routeData.page)',
+        ];
+      }
+
+      constructor() {
+        super();
+
+        // Get root pattern for app-route, for more info about `rootPath` see:
+        // https://www.polymer-project.org/2.0/docs/upgrade#urls-in-templates
+        this.rootPattern = (new URL(this.rootPath)).pathname;
+        this.maxIncome = -Infinity;
+        this.loadRawData();
+      }
+
+      _routePageChanged(page) {
+        // Polymer 2.0 will call with `undefined` on initialization.
+        // Ignore until we are properly called with a string.
+        if (page === undefined) {
+          return;
+        }
+
+        // If no page was found in the route data, page will be an empty string.
+        // Deault to 'view1' in that case.
+        this.page = page || 'view1';
+      }
+
+      addIdentifierToData(data) {
+        const DataWithId = function (
+          data,
+          _id,
+          _chickId,
+          _dietId,
+          someWeekAgo,
+          weight
+        ) {
+          data.id = _id;
+          data.chick = _chickId;
+          data.diet = _dietId;
+          data.someWeekAgo = someWeekAgo;
+          data.weight = weight;
+          data.income = 0;
+          data.updated = new Date;
+          return data;
+        };
+        return DataWithId(data, ++this.chickId, data.Chick, data.Diet, data.Time, data.weight);
+      }
+
+      findOrCreateChick(key, diet) {
+        if (!this.chicks[key]) {
+          this.chicks[key] = new Chick(key, diet);
+        }
+        return this.chicks[key];
+      }
+
+      addChick(record) {
+        const chick = this.findOrCreateChick(record.chick, record.diet);
+        chick.registerRecord(record);
+        return record;
+      };
+
+      addIncomeWeekToRecord(record) {
+        const chick = this.findOrCreateChick(record.chick, record.diet);
+        const newWithIncomeWeek = (record, chick) => {
+          record.income = chick.calculateIncome(record.weight);
+          chick.addMaxIncome(record.income);
+          record.updated = chick.calculateWeek(record.someWeekAgo);
+          return record;
+        };
+        return newWithIncomeWeek(record, chick);
+      };
+
+      findMaxIncome(record) {
+        this.maxIncome = Math.max(record.income, this.maxIncome);
+        return record;
+      }
+
+      loadRawData() {
+        var xhr = new XMLHttpRequest();
+        xhr.onload = () => {
+          const rawData = JSON.parse(xhr.responseText);
+          this.records = rawData.map(item => this.addIdentifierToData(item)).
+            map(item => this.addChick(item)).
+            map(item => this.addIncomeWeekToRecord(item)).
+            map(item => this.findMaxIncome(item));
+
+          let oldestTimestamp = Math.min.apply(Math, this.records.map(record => record.updated.getTime()));
+          const msecondsPeriod = Date.now() - oldestTimestamp;
+          this.findMaxNumberOfWeeks(this.records, msecondsPeriod);
+
+          const getXY0To100FromIncomeAndDateForLineChart = (divForX, maxX, maxY) => (record) => {
+            const x = Math.ceil((record.updated.getTime() - divForX) / maxX * 100);
+            const y = Math.ceil((1 - (record.income) / maxY) * 100);
+            return new Point(x, y);
+          };
+
+          const quantiles = (points) => {
+            const incomes = points.map(point => point.y).sort((a, b) => a - b);
+            const quantileSize = Math.floor(incomes.length / 4);
+            const list = [];
+
+            let curQuantile = { value: 0, count: 0 };
+            incomes.map((income, index) => {
+              if ((index % quantileSize) === 0) {
+                list.push(curQuantile);
+                curQuantile = { value: 0, count: 0 };
+              }
+              curQuantile.value += income;
+              ++curQuantile.count;
+            });
+
+            const result = {};
+
+            list.map((cur, index) => {
+              let quantilePercent = index * 25;
+              result[quantilePercent] = cur.count ? Math.floor(cur.value / cur.count) : 0;
+            });
+
+            const halfSize = points.length / 2;
+            result.median = points[Math.floor(halfSize)].y + points[Math.ceil(halfSize)].y / 2;
+
+            return result;
+          };
+
+
+          const getRelativeXYForLineChart = getXY0To100FromIncomeAndDateForLineChart(oldestTimestamp, msecondsPeriod, this.maxIncome);
+          const points = this.records.map(getRelativeXYForLineChart).sort((a, b) => a.x - b.x);
+          const pointMap = {};
+
+          const extractPointToMap = (point) => {
+            if (!pointMap[point.x]) {
+              pointMap[point.x] = [];
+            }
+            pointMap[point.x].push(point);
+          };
+          points.map(extractPointToMap);
+          const filteredPointsForLineChart = Object.keys(pointMap).map((x) => {
+            const group = pointMap[x];
+            const point = group.reduce((acc, cur) => {
+              ++acc.count;
+              acc.y += cur.y;
+              return acc;
+            }, { x, count: 0, y: 0 });
+
+            return new Point(point.x, Math.floor(point.y / point.count));
+          });
+
+          this.lineChartPoints = filteredPointsForLineChart;
+
+          const quantiles0to100by25 = quantiles(points);
+          const pointsMonthAgo = points.filter(point => point.y < 90);
+          const quantiles0to100by25MonthAgo = quantiles(pointsMonthAgo);
+
+          this.lineChartUp = {
+            from: quantiles0to100by25[50],
+            to: quantiles0to100by25[75]
+          };
+          this.lineChartDown = {
+            from: quantiles0to100by25[50],
+            to: quantiles0to100by25[25]
+          };
+
+          this.quantiles = quantiles0to100by25;
+
+          this.quantileChangeInPercent = quantiles0to100by25[75] - quantiles0to100by25MonthAgo[75];
+
+          const dietMap = [];
+          const addToDietGroup = (chick) => {
+            if (!dietMap[chick.diet]) {
+              dietMap[chick.diet] = [];
+            }
+            dietMap[chick.diet].push(chick.maxIncome);
+          };
+
+          const getDietPercentList = () => {
+            const result = [];
+
+            let totalIncomeDiets = 0;
+
+            const avgIncomeForDietList = Object.keys(dietMap).map((x) => {
+              const dietIncomeList = dietMap[x];
+              const avgIncomeForDiet = dietIncomeList.reduce((acc, cur) => acc + cur, 0) / dietIncomeList.length;
+              totalIncomeDiets += avgIncomeForDiet;
+              return avgIncomeForDiet;
+            });
+
+            return avgIncomeForDietList.map(x => Math.round(x * 100 / totalIncomeDiets));
+          };
+
+          const list = [];
+          for (let i in this.chicks) {
+            if (this.chicks[i]) {
+              const chick = this.chicks[i];
+              list.push(chick);
+            }
+          }
+          list.map(addToDietGroup);
+          this.dietProportions = getDietPercentList();
+        };
+        xhr.open('GET', 'src/raw-data.json', true);
+        xhr.send();
+      }
+
+      findMaxNumberOfWeeks(records, msecondsPeriod) {
+        const msecondsInWeek = 86400000 * 7;
+        this.maxNumberOfWeeks = Math.ceil(msecondsPeriod / msecondsInWeek);
+      }
+
+      _pageChanged(page) {
+        // Load page import on demand. Show 404 page if fails
+        var resolvedPageUrl = this.resolveUrl('chick-' + page + '.html');
+        Polymer.importHref(
+          resolvedPageUrl,
+          null,
+          this._showPage404.bind(this),
+          true);
+      }
+
+      _showPage404() {
+        this.page = 'view404';
+      }
+    }
+
+    window.customElements.define(ChickReportLayout.is, ChickReportLayout);
+  </script>
+</dom-module>

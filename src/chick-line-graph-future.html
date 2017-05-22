@@ -1,0 +1,65 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<dom-module id="chick-line-graph-future">
+    <template>
+        <svg class="future-graph" viewBox="0 0 200 200">
+            <line dom-if="[[lineChartUp]]" stroke-dasharray="5, 10" x1="0" x2="200" y1$="[[lineChartUp.from]]" y2$="[[lineChartUp.to]]"
+                stroke-width="3" stroke="white" stroke-width="2" />
+            <line dom-if="[[lineChartDown]]" stroke-dasharray="5, 10" x1="0" x2="200" y1$="[[lineChartDown.from]]" y2$="[[lineChartDown.to]]"
+                stroke-width="3" stroke="white" stroke-width="2" />
+        </svg>
+        <div class="future-graph-title">
+            Next {{maxNumberOfWeeks}} weeks
+        </div>
+        <style>
+            .future-graph {
+                background-color: rgba(216, 216, 216, 1);
+                border: 1px solid rgba(151, 151, 151, 1);
+            }
+            
+            .future-graph-title {
+                font-family: 'AvenirNext-Bold';
+                font-size: 24px;
+                color: rgba(74, 74, 74, 1);
+            }
+        </style>
+    </template>
+    <script>
+        class ChickLineGraphFuture extends Polymer.Element {
+            static get is() { return 'chick-line-graph-future'; }
+
+            static get properties() {
+                return {
+                    lineChartUp: Object,
+                    lineChartDown: Object,
+                    drewLineChart: String,
+                    maxNumberOfWeeks: {
+                        type: Number,
+                        value: 0
+
+                    }
+                };
+            }
+
+            _lineChartPoints(lineChartPoints) {
+                this.drewLineChart = this.drawLineChart(lineChartPoints, 2, 2);
+            }
+
+            drawLineChart(lineChartPoints, multiplierX, multiplierY) {
+
+                let firstLine = true;
+
+                const pointToSvgPathString = (point) => {
+                    if (firstLine) {
+                        firstLine = false;
+                        return `M ${point.x * multiplierX} ${point.y * multiplierY}`;
+                    }
+                    return `L ${point.x * multiplierX} ${point.y * multiplierY}`;
+                };
+                return lineChartPoints.map(pointToSvgPathString).join(' ');
+            }
+        }
+
+        window.customElements.define(ChickLineGraphFuture.is, ChickLineGraphFuture);
+    </script>
+</dom-module>

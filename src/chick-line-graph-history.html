@@ -1,0 +1,67 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<dom-module id="chick-line-graph-history">
+    <template>
+        <svg class="history-graph" viewBox="0 0 200 200">
+            <path dom-if="[[drewLineChart]]" d$="[[drewLineChart]]" stroke="white" fill="transparent" stroke-width="3"
+            />
+
+        </svg>
+        <div class="history-graph-title">
+            Past {{maxNumberOfWeeks}} weeks
+        </div>
+        <style>
+            .history-graph {
+                background-color: rgba(216, 216, 216, 1);
+                border: 1px solid rgba(151, 151, 151, 1);
+            }
+            
+            .history-graph-title {
+                font-family: 'AvenirNext-Bold';
+                font-size: 24px;
+                color: rgba(74, 74, 74, 1);
+            }
+        </style>
+    </template>
+    <script>
+        class ChickLineGraphHistory extends Polymer.Element {
+            static get is() { return 'chick-line-graph-history'; }
+
+            static get properties() {
+                return {
+                    lineChartPoints: {
+                        type: Array,
+                        reflectToAttribute: true,
+                        observer: '_lineChartPoints'
+                    },
+                    drewLineChart: String,
+                    maxNumberOfWeeks: {
+                        type: Number,
+                        value: 0
+
+                    }
+                };
+            }
+
+            _lineChartPoints(lineChartPoints) {
+                this.drewLineChart = this.drawLineChart(lineChartPoints, 2, 2);
+            }
+
+            drawLineChart(lineChartPoints, multiplierX, multiplierY) {
+
+                let firstLine = true;
+
+                const pointToSvgPathString = (point) => {
+                    if (firstLine) {
+                        firstLine = false;
+                        return `M ${point.x * multiplierX} ${point.y * multiplierY}`;
+                    }
+                    return `L ${point.x * multiplierX} ${point.y * multiplierY}`;
+                };
+                return lineChartPoints.map(pointToSvgPathString).join(' ');
+            }
+        }
+
+        window.customElements.define(ChickLineGraphHistory.is, ChickLineGraphHistory);
+    </script>
+</dom-module>

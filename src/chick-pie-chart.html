@@ -1,0 +1,93 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<dom-module id="chick-pie-chart">
+    <template>
+        <div id="pie" svg-view-box="-1 -1 2 2" svg-class="pie-chart">pie generation process...</div>
+        <style>
+            .pie-chart {
+                border: 1px solid rgba(151, 151, 151, 1);
+                border-radius: 173px;
+                transform: rotate(-0.90deg);
+            }
+        </style>
+    </template>
+    <script>
+        class ChickPieChart extends Polymer.Element {
+            static get is() { return 'chick-pie-chart'; }
+
+            static get properties() {
+                return {
+                    dietProportions: {
+                        type: Array,
+                        reflectToAttribute: true,
+                        observer: '_dietProportions'
+                    },
+                    pieChartPaths: {
+                        type: Array,
+                        value: []
+                    }
+                };
+            }
+
+            _dietProportions(dietProportions) {
+                console.log(dietProportions);
+                this.pieChartPaths = this.generatePieChartPaths(dietProportions);
+
+                // change
+                if (this.$.pie) {
+                    const container = this.$.pie;
+                    const svg = document.createElement('svg');
+                    svg.setAttributeNS(null, 'viewBox', container.getAttribute('svg-view-box'));
+                    svg.setAttributeNS(null, 'class', container.getAttribute('svg-class'));
+                    this.pieChartPaths.map(pathObj => {
+                        const newpath = document.createElement('path');
+                        newpath.setAttribute("d", pathObj.d);
+                        newpath.setAttribute("fill", pathObj.fill);
+                        svg.append(newpath);
+                    });
+                    container.innerHTML = svg.outerHTML;
+                }
+
+            }
+
+            generatePieChartPaths(dietProportions) {
+
+                const colors = ['#aaa', '#bbb', '#ccc', '#ddd', '#eee', '#fff'];
+
+                const getCoordinatesForPercent = (percent) => {
+                    let x = Math.cos(2 * Math.PI * percent);
+                    let y = Math.sin(2 * Math.PI * percent);
+
+                    return { x, y };
+                };
+
+                const pathData = [];
+
+                const dietSum = dietProportions.reduce((acc, cur) => acc + cur, 0);
+                const percents = dietProportions.map(proportion => proportion / dietSum);
+
+                let percent = 0;
+                for (let index in percents) {
+                    const start = getCoordinatesForPercent(percent);
+
+                    percent += percents[index];
+                    const end = getCoordinatesForPercent(percent);
+                    const largeArcFlag = percent > .5 ? 1 : 0;
+
+                    const data = [
+                        `M ${start.x} ${start.y}`,
+                        `A 1 1 0 ${largeArcFlag} 1 ${end.x} ${end.y}`,
+                        `L 0 0`,
+                    ].join(' ');
+                    pathData.push({
+                        d: data,
+                        fill: colors[index]
+                    });
+                }
+                return pathData;
+            }
+        }
+
+        window.customElements.define(ChickPieChart.is, ChickPieChart);
+    </script>
+</dom-module>

@@ -1,0 +1,113 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<dom-module id="chick-raw-table">
+    <template>
+        <table class="chick-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>chick</th>
+                    <th>diet</th>
+                    <th>weight</th>
+                    <th>income</th>
+                    <th>last viewed</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template is="dom-repeat" items="[[records]]">
+                    <tr>
+                        <th>{{item.id}}</th>
+                        <th>{{item.chick}}</th>
+                        <th>{{item.diet}}</th>
+                        <th>£{{item.weight}}</th>
+                        <th>£{{item.income}}</th>
+                        <th>{{relativeDate(item.updated)}}</th>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+        <style>
+            body {
+                padding-top: 29px;
+            }
+            
+            .chick-table {
+                background-color: rgba(216, 216, 216, 1);
+                border: 1px solid rgba(151, 151, 151, 1);
+            }
+            
+            .chick-table tr {
+                background-color: rgba(184, 184, 184, 1);
+            }
+            
+            .chick-table thead th {
+                background-color: rgba(172, 172, 172, 1);
+            }
+            
+            .chick-table td,
+            .chick-table th {
+                width: 157px;
+                color: white;
+            }
+        </style>
+    </template>
+    <script>
+        class ChickRawTable extends Polymer.Element {
+            static get is() { return 'chick-raw-table'; }
+
+            static get properties() {
+                return {
+                    records: {
+                        type: Array
+                    },
+                    maxIncome: {
+                        type: Number,
+                        value: 0
+                    }
+                };
+            }
+
+            constructor() {
+                super();
+                this.oldestTimestamp = Date.now();
+            }
+
+            relativeDate(value) {
+                let today = new Date;
+                today.setTime(today.getTime() - (today.getTimezoneOffset() - value.getTimezoneOffset()) * 60 * 1000);
+                const diff = today.getTime() - value.getTime();
+                if (diff < 0) {
+                    return 'Future';
+                }
+
+                const years = today.getFullYear() - value.getFullYear();
+                if (years) {
+                    if (years === 1) {
+                        return 'Previous Year';
+                    }
+                    return `${years} Years ago`;
+                }
+
+                const months = today.getMonth() - value.getMonth();
+                if (months) {
+                    if (months === 1) {
+                        return 'Previous Month';
+                    }
+                    return `${months} Months ago`;
+                }
+
+                const days = today.getDay() - value.getDay();
+                if (days) {
+                    if (days === 1) {
+                        return 'Yesterday';
+                    }
+                    return `${days} Days ago`;
+                }
+
+                return 'Today';
+            }
+        }
+
+        window.customElements.define(ChickRawTable.is, ChickRawTable);
+    </script>
+</dom-module>
