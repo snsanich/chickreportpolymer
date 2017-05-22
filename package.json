@@ -11,8 +11,8 @@
     "lint:javascript": "eslint . --ext js,html --ignore-path .gitignore",
     "test": "polymer test",
     "test:integration": "polymer build # test that psk builds without error with the CLI",
-    "build:prod": "polymer build --js-compile --js-minify --css-minify --html-minify --bundle --add-service-worker --add-push-manifest --sw-precache-config --env PROD --entrypoint index.html",
+    "build:prod": "polymer build --js-compile --js-minify --css-minify --html-minify --bundle --add-service-worker --add-push-manifest --sw-precache-config sw-precache-config.js --env PROD --entrypoint index.html",
     "serve:prod": "php -ddoc.root=build/default -S localhost:4201 -t ./build/default",
-    "build:gh-pages": "npm run build:prod && mkdir -p docs && cp -R build/default/* docs/"
+    "build:gh-pages": "npm run build:prod && mkdir -p docs && sed -i -e 's:<base href=\"/\">:<base href=\"/chickreportpolymer/\">:g' build/default/index.html && cp -R build/default/* ./docs"
   }
 }
