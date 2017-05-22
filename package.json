@@ -11,6 +11,7 @@
     "lint:javascript": "eslint . --ext js,html --ignore-path .gitignore",
     "test": "polymer test",
     "test:integration": "polymer build # test that psk builds without error with the CLI",
-    "build:prod": "mkdir -p docs && polymer-bundler ./index.html --strip-comments --inline-scripts --inline-css --out-dir docs"
+    "build:prod": "polymer build --js-compile --js-minify --css-minify --html-minify --bundle --add-service-worker --add-push-manifest --sw-precache-config --env PROD --entrypoint index.html",
+    "serve:prod": "php -ddoc.root=build -S localhost:4201 -t ./build/"
   }
 }
