@@ -1,36 +1,15 @@
-# Polymer App Toolbox - Starter Kit
+# Purpose
 
-[![Build Status](https://travis-ci.org/PolymerElements/polymer-starter-kit.svg?branch=master)](https://travis-ci.org/PolymerElements/polymer-starter-kit)
+I implemented simple set of graphs for data set in order to test usability the [polymer 2] framework for GPRS network. Results will be added later (or you can find them yourself!).
 
-This template is a starting point for building apps using a drawer-based
-layout. The layout is provided by `app-layout` elements.
+## Common tips
 
-This template, along with the `polymer-cli` toolchain, also demonstrates use
-of the "PRPL pattern" This pattern allows fast first delivery and interaction with
-the content at the initial route requested by the user, along with fast subsequent
-navigation by pre-caching the remaining components required by the app and
-progressively loading them on-demand as the user navigates through the app.
-
-The PRPL pattern, in a nutshell:
+Here you can find a pRPL pattern. The PRPL pattern, in a nutshell:
 
 * **Push** components required for the initial route
 * **Render** initial route ASAP
 * **Pre-cache** components for remaining routes
 * **Lazy-load** and progressively upgrade next routes on-demand
-
-### Migrating from Polymer Starter Kit v1?
-
-[Check out our blog post that covers what's changed in PSK2 and how to migrate!](https://www.polymer-project.org/1.0/blog/2016-08-18-polymer-starter-kit-or-polymer-cli.html)
-
-### Quickstart
-
-We've recorded a Polycast to get you up and running with PSK2 fast!
-
-<p align="center">
-  <a href="https://www.youtube.com/watch?v=HgJ0XCyBwzY&list=PLNYkxOF6rcIDdS7HWIC_BYRunV6MHs5xo&index=10">
-    <img src="https://img.youtube.com/vi/HgJ0XCyBwzY/0.jpg" alt="Polymer Starter Kit 2 video">
-  </a>
-</p>
 
 ### Setup
 
@@ -44,12 +23,6 @@ First, install [Polymer CLI](https://github.com/Polymer/polymer-cli) using
 Second, install [Bower](https://bower.io/) using [npm](https://www.npmjs.com)
 
     npm install -g bower
-
-##### Initialize project from template
-
-    mkdir chick-report-layout
-    cd chick-report-layout
-    polymer init starter-kit
 
 ### Start the development server
 
